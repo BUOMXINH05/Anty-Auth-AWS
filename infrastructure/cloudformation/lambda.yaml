@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  AuthenticateFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: AuthenticateUser
+      Handler: authenticate.handler
+      Runtime: nodejs20.x
+      Role: arn:aws:iam::your-account-id:role/your-lambda-role
+      Code:
+        S3Bucket: !ImportValue S3BucketName
+        S3Key: authenticate.zip
+
+  RefreshFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: RefreshToken
+      Handler: refresh.handler
+      Runtime: nodejs20.x
+      Role: arn:aws:iam::your-account-id:role/your-lambda-role
+      Code:
+        S3Bucket: !ImportValue S3BucketName
+        S3Key: refresh.zip
+
+  GetTokenFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: GetToken
+      Handler: getToken.handler
+      Runtime: nodejs20.x
+      Role: arn:aws:iam::your-account-id:role/your-lambda-role
+      Code:
+        S3Bucket: !ImportValue S3BucketName
+        S3Key: getToken.zip
+Outputs:
+  AuthenticateFunctionName:
+    Value: !GetAtt AuthenticateFunction.Arn
+    Export:
+      Name: AuthenticateFunctionName
+  RefreshFunctionName:
+    Value: !GetAtt RefreshFunction.Arn
+    Export:
+      Name: RefreshFunctionName
+  GetTokenFunctionName:
+    Value: !GetAtt GetTokenFunction.Arn
+    Export:
+      Name: GetTokenFunctionName

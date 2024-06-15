@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  UserAuthAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: UserAuthAPI
+
+  AuthenticateResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt UserAuthAPI.RootResourceId
+      PathPart: authenticate
+      RestApiId: !Ref UserAuthAPI
+
+  AuthenticateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId: !Ref AuthenticateResource
+      RestApiId: !Ref UserAuthAPI
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthenticateFunctionName}/invocations
+
+  RefreshResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt UserAuthAPI.RootResourceId
+      PathPart: refresh
+      RestApiId: !Ref UserAuthAPI
+
+  RefreshMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId: !Ref RefreshResource
+      RestApiId: !Ref UserAuthAPI
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RefreshFunctionName}/invocations
+
+  GetTokenResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt UserAuthAPI.RootResourceId
+      PathPart: getToken
+      RestApiId: !Ref UserAuthAPI
+
+  GetTokenMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId: !Ref GetTokenResource
+      RestApiId: !Ref UserAuthAPI
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTokenFunctionName}/invocations
+
+Outputs:
+  ApiId:
+    Value: !Ref UserAuthAPI
+  AuthenticateResourceId:
+    Value: !Ref AuthenticateResource
+  RefreshResourceId:
+    Value: !Ref RefreshResource
+  GetTokenResourceId:
+    Value: !Ref GetTokenResource
