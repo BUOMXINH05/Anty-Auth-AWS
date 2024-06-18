@@ -1,0 +1,19 @@
+{
+    "TableName": "Anty-Auth-Table",
+    "AttributeDefinitions": [
+        {
+            "AttributeName": "UserId",
+            "AttributeType": "S"
+        }
+    ],
+    "KeySchema": [
+        {
+            "AttributeName": "UserId",
+            "KeyType": "HASH"
+        }
+    ],
+    "ProvisionedThroughput": {
+        "ReadCapacityUnits": 5,
+        "WriteCapacityUnits": 5
+    }
+}

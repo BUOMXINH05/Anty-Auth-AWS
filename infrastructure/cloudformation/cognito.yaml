@@ -1,34 +1,27 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS Cognito Setup
 Resources:
-  UserPool:
-    Type: AWS::Cognito::UserPool
+  CognitoUserPool:
+    Type: 'AWS::Cognito::UserPool'
     Properties:
-      UserPoolName: MyUserPool
-      AliasAttributes:
-        - email
-      AutoVerifiedAttributes:
-        - email
-      Policies:
-        PasswordPolicy:
-          MinimumLength: 8
-          RequireUppercase: true
-          RequireLowercase: true
-          RequireNumbers: true
-          RequireSymbols: true
-  UserPoolClient:
-    Type: AWS::Cognito::UserPoolClient
+      UserPoolName: !Ref UserPoolName
+  CognitoUserPoolClient:
+    Type: 'AWS::Cognito::UserPoolClient'
     Properties:
-      ClientName: MyClient
-      UserPoolId: !Ref UserPool
-      ExplicitAuthFlows:
-        - ADMIN_NO_SRP_AUTH
-        - USER_PASSWORD_AUTH
+      ClientName: !Ref UserPoolClientName
+      UserPoolId: !Ref CognitoUserPool
 Outputs:
   UserPoolId:
-    Value: !Ref UserPool
-    Export:
-      Name: UserPoolId
+    Description: 'Cognito User Pool ID'
+    Value: !Ref CognitoUserPool
   UserPoolClientId:
-    Value: !Ref UserPoolClient
-    Export:
-      Name: UserPoolClientId
+    Description: 'Cognito User Pool Client ID'
+    Value: !Ref CognitoUserPoolClient
+Parameters:
+  UserPoolName:
+    Type: String
+    Description: 'Name of the Cognito User Pool'
+  UserPoolClientName:
+    Type: String
+    Description: 'Name of the Cognito User Pool Client'

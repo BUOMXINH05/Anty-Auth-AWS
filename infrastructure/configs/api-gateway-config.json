@@ -1,0 +1,17 @@
+{
+    "apiName": "MyAPI",
+    "resources": [
+        {
+            "path": "authenticate",
+            "lambdaFunction": "AuthenticateUser"
+        },
+        {
+            "path": "refresh",
+            "lambdaFunction": "RefreshToken"
+        },
+        {
+            "path": "getToken",
+            "lambdaFunction": "GetToken"
+        }
+    ]
+}

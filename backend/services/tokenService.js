@@ -1,13 +1,19 @@
-const AWS = require('aws-sdk');
-const dynamoDB = new AWS.DynamoDB.DocumentClient();
+const { DynamoDBClient, GetItemCommand } = require("@aws-sdk/client-dynamodb");
 
-exports.getToken = async (userId) => {
+const getToken = async (userId) => {
+    const client = new DynamoDBClient({ region: process.env.AWS_REGION });
     const params = {
         TableName: process.env.DYNAMODB_TABLE_NAME,
-        Key: {
-            UserID: userId
-        }
+        Key: { userId: { S: userId } }
     };
-    const result = await dynamoDB.get(params).promise();
-    return result.Item;
+    try {
+        const command = new GetItemCommand(params);
+        const result = await client.send(command);
+        return result.Item;
+    } catch (error) {
+        console.error(`Get token error: ${error.message}`);
+        throw new Error('Failed to retrieve token');
+    }
 };
+
+module.exports = { getToken };

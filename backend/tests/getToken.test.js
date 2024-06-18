@@ -1,38 +1,36 @@
 const { handler } = require('../handlers/getToken');
-const AWS = require('aws-sdk-mock');
-const { expect } = require('chai');
+const { DynamoDBClient, GetItemCommand } = require("@aws-sdk/client-dynamodb");
+const { mockClient } = require('aws-sdk-client-mock');
+const { expect } = require('@jest/globals');
+require('dotenv').config();
 
 describe('Get Token Handler', () => {
-  beforeEach(() => {
-    AWS.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
-      callback(null, { Item: { UserID: 'testuser', Token: 'test-token' } });
+    const dynamoMock = mockClient(DynamoDBClient);
+
+    beforeEach(() => {
+        dynamoMock.reset();
+        process.env.DYNAMODB_TABLE_NAME = 'dummyTable';
+        process.env.AWS_REGION = 'us-east-1';
+        dynamoMock.on(GetItemCommand).resolves({ Item: { token: { S: 'dummyToken' } } });
     });
-  });
 
-  afterEach(() => {
-    AWS.restore('DynamoDB.DocumentClient');
-  });
-
-  it('should return token if found', async () => {
-    const event = {
-      body: JSON.stringify({ userId: 'testuser' }),
-    };
-    const response = await handler(event);
-    const body = JSON.parse(response.body);
-    expect(response.statusCode).to.equal(200);
-    expect(body.token).to.exist;
-  });
-
-  it('should return 404 if token not found', async () => {
-    AWS.remock('DynamoDB.DocumentClient', 'get', (params, callback) => {
-      callback(null, {});
+    afterEach(() => {
+        dynamoMock.reset();
     });
-    const event = {
-      body: JSON.stringify({ userId: 'unknownuser' }),
-    };
-    const response = await handler(event);
-    const body = JSON.parse(response.body);
-    expect(response.statusCode).to.equal(404);
-    expect(body.error).to.exist;
-  });
+
+    it('should get token successfully', async () => {
+        const event = { pathParameters: { userId: 'dummyUserId' } };
+        const result = await handler(event);
+        expect(result.statusCode).toBe(200);
+        expect(JSON.parse(result.body).token).toBe('dummyToken');
+    });
+
+    it('should return an error if token retrieval fails', async () => {
+        dynamoMock.on(GetItemCommand).rejects(new Error('Failed to retrieve token'));
+
+        const event = { pathParameters: { userId: 'dummyUserId' } };
+        const result = await handler(event);
+        expect(result.statusCode).toBe(400);
+        expect(JSON.parse(result.body).message).toBe('Failed to retrieve token');
+    });
 });

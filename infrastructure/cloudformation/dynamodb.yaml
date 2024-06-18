@@ -1,20 +1,21 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS DynamoDB Setup
 Resources:
-  TokensTable:
-    Type: AWS::DynamoDB::Table
+  DynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
     Properties:
-      TableName: TokensTable
+      TableName: 'TokensTable'
       AttributeDefinitions:
-        - AttributeName: UserID
-          AttributeType: S
+        - AttributeName: 'UserId'
+          AttributeType: 'S'
       KeySchema:
-        - AttributeName: UserID
-          KeyType: HASH
+        - AttributeName: 'UserId'
+          KeyType: 'HASH'
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
 Outputs:
   TableName:
-    Value: !Ref TokensTable
-    Export:
-      Name: DynamoDBTableName
+    Description: 'DynamoDB Table Name'
+    Value: !Ref DynamoDBTable

@@ -1,47 +1,45 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS Lambda Setup
 Resources:
-  AuthenticateFunction:
-    Type: AWS::Lambda::Function
+  LambdaFunction:
+    Type: 'AWS::Lambda::Function'
     Properties:
-      FunctionName: AuthenticateUser
-      Handler: authenticate.handler
-      Runtime: nodejs20.x
-      Role: arn:aws:iam::your-account-id:role/your-lambda-role
-      Code:
-        S3Bucket: !ImportValue S3BucketName
-        S3Key: authenticate.zip
-
-  RefreshFunction:
-    Type: AWS::Lambda::Function
+      Handler: !Ref LambdaHandler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      CodeUri: !Sub 's3://${S3BucketName}/${LambdaZipFile}'
+      Runtime: 'nodejs14.x'
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
     Properties:
-      FunctionName: RefreshToken
-      Handler: refresh.handler
-      Runtime: nodejs20.x
-      Role: arn:aws:iam::your-account-id:role/your-lambda-role
-      Code:
-        S3Bucket: !ImportValue S3BucketName
-        S3Key: refresh.zip
-
-  GetTokenFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: GetToken
-      Handler: getToken.handler
-      Runtime: nodejs20.x
-      Role: arn:aws:iam::your-account-id:role/your-lambda-role
-      Code:
-        S3Bucket: !ImportValue S3BucketName
-        S3Key: getToken.zip
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'LambdaExecutionPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'logs:*'
+                  - 'dynamodb:*'
+                Resource: '*'
 Outputs:
-  AuthenticateFunctionName:
-    Value: !GetAtt AuthenticateFunction.Arn
-    Export:
-      Name: AuthenticateFunctionName
-  RefreshFunctionName:
-    Value: !GetAtt RefreshFunction.Arn
-    Export:
-      Name: RefreshFunctionName
-  GetTokenFunctionName:
-    Value: !GetAtt GetTokenFunction.Arn
-    Export:
-      Name: GetTokenFunctionName
+  LambdaFunctionArn:
+    Description: 'Lambda Function ARN'
+    Value: !GetAtt LambdaFunction.Arn
+Parameters:
+  LambdaHandler:
+    Type: String
+    Description: 'Lambda function handler'
+  S3BucketName:
+    Type: String
+    Description: 'S3 bucket name for lambda code'
+  LambdaZipFile:
+    Type: String
+    Description: 'Lambda zip file name'

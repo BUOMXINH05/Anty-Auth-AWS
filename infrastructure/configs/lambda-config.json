@@ -1,0 +1,5 @@
+{
+    "LambdaHandler": "index.handler",
+    "S3BucketName": "anty-auth-frontend-bucket",
+    "LambdaZipFile": "authenticate.zip"
+}

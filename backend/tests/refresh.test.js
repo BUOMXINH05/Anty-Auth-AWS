@@ -1,40 +1,35 @@
 const { handler } = require('../handlers/refresh');
-const AWS = require('aws-sdk-mock');
-const jwt = require('jsonwebtoken');
-const { expect } = require('chai');
+const { CognitoIdentityProviderClient, AdminInitiateAuthCommand } = require("@aws-sdk/client-cognito-identity-provider");
+const { mockClient } = require('aws-sdk-client-mock');
+const { expect } = require('@jest/globals');
 require('dotenv').config();
 
-const { JWT_SECRET } = process.env;
-
 describe('Refresh Token Handler', () => {
-  beforeEach(() => {
-    AWS.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
-      callback(null, { Item: { UserID: 'testuser', Token: 'test-refresh-token' } });
+    const cognitoMock = mockClient(CognitoIdentityProviderClient);
+
+    beforeEach(() => {
+        cognitoMock.reset();
+        process.env.COGNITO_CLIENT_ID = 'dummyClientId';
+        process.env.AWS_REGION = 'us-east-1';
     });
-  });
 
-  afterEach(() => {
-    AWS.restore('DynamoDB.DocumentClient');
-  });
+    it('should refresh token successfully', async () => {
+        cognitoMock.on(AdminInitiateAuthCommand).resolves({
+            AuthenticationResult: { AccessToken: 'newDummyAccessToken' }
+        });
 
-  it('should return new token on successful refresh', async () => {
-    const refreshToken = jwt.sign({ username: 'testuser' }, JWT_SECRET);
-    const event = {
-      body: JSON.stringify({ refreshToken }),
-    };
-    const response = await handler(event);
-    const body = JSON.parse(response.body);
-    expect(response.statusCode).to.equal(200);
-    expect(body.token).to.exist;
-  });
+        const event = { body: JSON.stringify({ refreshToken: 'dummyRefreshToken' }) };
+        const result = await handler(event);
+        expect(result.statusCode).toBe(200);
+        expect(JSON.parse(result.body).AccessToken).toBe('newDummyAccessToken');
+    });
 
-  it('should return error on invalid refresh token', async () => {
-    const event = {
-      body: JSON.stringify({ refreshToken: 'invalid-token' }),
-    };
-    const response = await handler(event);
-    const body = JSON.parse(response.body);
-    expect(response.statusCode).to.equal(400);
-    expect(body.error).to.exist;
-  });
+    it('should return an error if token refresh fails', async () => {
+        cognitoMock.on(AdminInitiateAuthCommand).rejects(new Error('Token refresh failed'));
+
+        const event = { body: JSON.stringify({ refreshToken: 'dummyRefreshToken' }) };
+        const result = await handler(event);
+        expect(result.statusCode).toBe(400);
+        expect(JSON.parse(result.body).message).toBe('Token refresh failed');
+    });
 });

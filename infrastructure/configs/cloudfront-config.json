@@ -1,0 +1,57 @@
+{
+    "CallerReference": "my-distribution",
+    "Aliases": {
+      "Quantity": 0,
+      "Items": []
+    },
+    "DefaultRootObject": "index.html",
+    "Origins": {
+      "Quantity": 1,
+      "Items": [
+        {
+          "Id": "S3-Origin",
+          "DomainName": "anty-auth-frontend-bucket.s3.amazonaws.com",
+          "OriginPath": "",
+          "CustomHeaders": {
+            "Quantity": 0,
+            "Items": []
+          },
+          "S3OriginConfig": {
+            "OriginAccessIdentity": ""
+          }
+        }
+      ]
+    },
+    "DefaultCacheBehavior": {
+      "TargetOriginId": "S3-Origin",
+      "ViewerProtocolPolicy": "redirect-to-https",
+      "AllowedMethods": {
+        "Quantity": 2,
+        "Items": [
+          "HEAD",
+          "GET"
+        ],
+        "CachedMethods": {
+          "Quantity": 2,
+          "Items": [
+            "HEAD",
+            "GET"
+          ]
+        }
+      },
+      "Compress": true,
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "LambdaFunctionAssociations": {
+        "Quantity": 0,
+        "Items": []
+      }
+    },
+    "Comment": "",
+    "Enabled": true,
+    "ViewerCertificate": {
+      "CloudFrontDefaultCertificate": true,
+      "MinimumProtocolVersion": "TLSv1",
+      "CertificateSource": "cloudfront"
+    }
+  }
+  

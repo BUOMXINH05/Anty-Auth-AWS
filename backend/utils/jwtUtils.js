@@ -1,9 +1,19 @@
 const jwt = require('jsonwebtoken');
 
 exports.verifyToken = (token) => {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    try {
+        return jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+        console.error(`JWT verification error: ${error.message}`);
+        throw new Error('Invalid token');
+    }
 };
 
 exports.generateToken = (payload) => {
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+    try {
+        return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+    } catch (error) {
+        console.error(`JWT generation error: ${error.message}`);
+        throw new Error('Token generation failed');
+    }
 };

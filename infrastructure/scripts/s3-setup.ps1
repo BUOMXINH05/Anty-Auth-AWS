@@ -1,11 +1,12 @@
 Write-Output "Setting up S3 bucket..."
 
-# Load environment variables
-./load-env.ps1
+# Xác định đường dẫn chính xác tới tệp load-env.ps1 và tệp cấu hình
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$loadEnvPath = Join-Path -Path $scriptDir -ChildPath "load-env.ps1"
+$envFilePath = Join-Path -Path $scriptDir -ChildPath "..\..\.env"
 
-# Xác định đường dẫn chính xác tới tệp .env ở thư mục gốc
-$projectRoot = (Resolve-Path -Path "$PSScriptRoot\..\..").Path
-$envFilePath = Join-Path -Path $projectRoot -ChildPath ".env"
+# Load environment variables
+& $loadEnvPath
 
 # Lấy các biến môi trường cần thiết từ tệp .env
 $s3BucketName = [System.Environment]::GetEnvironmentVariable("S3_BUCKET_NAME")
@@ -15,18 +16,26 @@ if ($s3BucketName -eq $null) {
 }
 
 # Kiểm tra sự tồn tại của bucket và xóa nếu có
+$bucketExists = $false
 try {
     aws s3api head-bucket --bucket $s3BucketName
-    Write-Output "Deleting existing S3 bucket $s3BucketName and all its contents..."
-    aws s3 rb s3://$s3BucketName --force
-    if ($?) {
-        Write-Output "S3 bucket $s3BucketName deleted."
-    } else {
-        Write-Output "Error: S3 bucket $s3BucketName could not be deleted."
-        exit 1
-    }
+    $bucketExists = $true
 } catch {
-    Write-Output "Bucket $s3BucketName does not exist or could not be accessed."
+    Write-Output "Bucket $s3BucketName does not exist or could not be accessed. Proceeding to create a new bucket."
+}
+
+if ($bucketExists) {
+    try {
+        Write-Output "Deleting existing S3 bucket $s3BucketName and all its contents..."
+        aws s3 rb s3://$s3BucketName --force
+        if ($?) {
+            Write-Output "S3 bucket $s3BucketName deleted."
+        } else {
+            Write-Output "Error: S3 bucket $s3BucketName could not be deleted."
+        }
+    } catch {
+        Write-Output "Error: Unable to delete bucket $s3BucketName. Proceeding to create a new bucket."
+    }
 }
 
 # Tạo bucket S3 nếu chưa tồn tại
@@ -35,42 +44,6 @@ if ($?) {
     Write-Output "S3 bucket $s3BucketName created."
 } else {
     Write-Output "Error: S3 bucket could not be created."
-    exit 1
-}
-
-# Tạo tệp JSON cho bucket policy
-$bucketPolicy = @'
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "PublicReadGetObject",
-            "Effect": "Allow",
-            "Principal": "*",
-            "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::BUCKET_NAME/*"
-        }
-    ]
-}
-'@
-
-# Thay thế BUCKET_NAME bằng tên bucket thực tế
-$bucketPolicy = $bucketPolicy -replace "BUCKET_NAME", $s3BucketName
-
-# Lưu chính sách vào tệp JSON
-$policyFilePath = Join-Path -Path $PSScriptRoot -ChildPath "bucket-policy.json"
-$bucketPolicy | Out-File -FilePath $policyFilePath -Encoding utf8
-
-# Thiết lập bucket policy để cho phép public read
-aws s3api put-bucket-policy --bucket $s3BucketName --policy file://$policyFilePath
-if ($?) {
-    Write-Output "Bucket policy set for $s3BucketName."
-    # Xóa tệp JSON sau khi thiết lập thành công
-    Remove-Item -Path $policyFilePath
-} else {
-    Write-Output "Error: Bucket policy could not be set."
-    # Xóa tệp JSON nếu có lỗi
-    Remove-Item -Path $policyFilePath
     exit 1
 }
 

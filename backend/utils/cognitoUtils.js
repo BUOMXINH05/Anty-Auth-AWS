@@ -1,27 +1,45 @@
-const AWS = require('aws-sdk');
-const cognito = new AWS.CognitoIdentityServiceProvider();
+const { CognitoIdentityProviderClient, InitiateAuthCommand } = require("@aws-sdk/client-cognito-identity-provider");
 
-exports.authenticateWithCognito = async (username, password) => {
+const authenticateWithCognito = async (username, password) => {
+    const client = new CognitoIdentityProviderClient();
     const params = {
-        AuthFlow: 'USER_PASSWORD_AUTH',
+        AuthFlow: "USER_PASSWORD_AUTH",
         ClientId: process.env.COGNITO_CLIENT_ID,
         AuthParameters: {
             USERNAME: username,
             PASSWORD: password
         }
     };
-    const result = await cognito.initiateAuth(params).promise();
-    return result.AuthenticationResult;
+    try {
+        const command = new InitiateAuthCommand(params);
+        const response = await client.send(command);
+        return response.AuthenticationResult;
+    } catch (error) {
+        console.error(`Cognito authentication error: ${error.message}`);
+        throw new Error('Authentication failed');
+    }
 };
 
-exports.refreshCognitoToken = async (token) => {
+const refreshCognitoToken = async (refreshToken) => {
+    const client = new CognitoIdentityProviderClient();
     const params = {
-        AuthFlow: 'REFRESH_TOKEN_AUTH',
+        AuthFlow: "REFRESH_TOKEN_AUTH",
         ClientId: process.env.COGNITO_CLIENT_ID,
         AuthParameters: {
-            REFRESH_TOKEN: token
+            REFRESH_TOKEN: refreshToken
         }
     };
-    const result = await cognito.initiateAuth(params).promise();
-    return result.AuthenticationResult;
+    try {
+        const command = new InitiateAuthCommand(params);
+        const response = await client.send(command);
+        return response.AuthenticationResult;
+    } catch (error) {
+        console.error(`Cognito refresh token error: ${error.message}`);
+        throw new Error('Token refresh failed');
+    }
+};
+
+module.exports = {
+    authenticateWithCognito,
+    refreshCognitoToken
 };

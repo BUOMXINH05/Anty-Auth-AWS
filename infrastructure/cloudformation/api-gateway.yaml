@@ -1,76 +1,59 @@
+---
 AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS API Gateway Setup
 Resources:
-  UserAuthAPI:
-    Type: AWS::ApiGateway::RestApi
+  ApiGatewayRestApi:
+    Type: 'AWS::ApiGateway::RestApi'
     Properties:
-      Name: UserAuthAPI
-
-  AuthenticateResource:
-    Type: AWS::ApiGateway::Resource
+      Name: 'UserAuthAPI'
+  ApiGatewayResource:
+    Type: 'AWS::ApiGateway::Resource'
     Properties:
-      ParentId: !GetAtt UserAuthAPI.RootResourceId
-      PathPart: authenticate
-      RestApiId: !Ref UserAuthAPI
-
-  AuthenticateMethod:
-    Type: AWS::ApiGateway::Method
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: 'authenticate'
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethod:
+    Type: 'AWS::ApiGateway::Method'
     Properties:
-      AuthorizationType: NONE
-      HttpMethod: POST
-      ResourceId: !Ref AuthenticateResource
-      RestApiId: !Ref UserAuthAPI
+      AuthorizationType: 'NONE'
+      HttpMethod: 'POST'
+      ResourceId: !Ref ApiGatewayResource
+      RestApiId: !Ref ApiGatewayRestApi
       Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: 
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthenticateFunctionName}/invocations
-
-  RefreshResource:
-    Type: AWS::ApiGateway::Resource
+        IntegrationHttpMethod: 'POST'
+        Type: 'AWS_PROXY'
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthenticateUser.Arn}/invocations'
+  AuthenticateUser:
+    Type: 'AWS::Lambda::Function'
     Properties:
-      ParentId: !GetAtt UserAuthAPI.RootResourceId
-      PathPart: refresh
-      RestApiId: !Ref UserAuthAPI
-
-  RefreshMethod:
-    Type: AWS::ApiGateway::Method
+      Handler: 'authenticate.handler'
+      Role: !GetAtt LambdaExecutionRole.Arn
+      CodeUri: 's3://your-s3-bucket/authenticate.zip'
+      Runtime: 'nodejs14.x'
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
     Properties:
-      AuthorizationType: NONE
-      HttpMethod: POST
-      ResourceId: !Ref RefreshResource
-      RestApiId: !Ref UserAuthAPI
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: 
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RefreshFunctionName}/invocations
-
-  GetTokenResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      ParentId: !GetAtt UserAuthAPI.RootResourceId
-      PathPart: getToken
-      RestApiId: !Ref UserAuthAPI
-
-  GetTokenMethod:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      AuthorizationType: NONE
-      HttpMethod: POST
-      ResourceId: !Ref GetTokenResource
-      RestApiId: !Ref UserAuthAPI
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: 
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTokenFunctionName}/invocations
-
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'LambdaExecutionPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'logs:*'
+                  - 'dynamodb:*'
+                Resource: '*'
 Outputs:
   ApiId:
-    Value: !Ref UserAuthAPI
-  AuthenticateResourceId:
-    Value: !Ref AuthenticateResource
-  RefreshResourceId:
-    Value: !Ref RefreshResource
-  GetTokenResourceId:
-    Value: !Ref GetTokenResource
+    Description: 'API Gateway ID'
+    Value: !Ref ApiGatewayRestApi
+  LambdaFunctionArn:
+    Description: 'Lambda Function ARN'
+    Value: !GetAtt AuthenticateUser.Arn

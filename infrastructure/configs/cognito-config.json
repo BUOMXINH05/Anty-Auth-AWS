@@ -1,0 +1,4 @@
+{
+    "UserPoolName": "your-cognito-user-pool-name",
+    "UserPoolClientName": "your-cognito-client-name"
+}
